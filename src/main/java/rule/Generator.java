@@ -1,16 +1,16 @@
-import javafx.util.Pair;
+package rule;
+
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.internal.core.dom.NaiveASTFlattener;
 
 import java.util.*;
 
-public class RuleGenerator extends ASTVisitor {
+public class Generator extends ASTVisitor {
 
     public static Map<Rule, Integer> rules = new HashMap<>();
 
-    ArrayList<Rule> addedRules = new ArrayList<Rule>();
+    public ArrayList<Rule> addedRules = new ArrayList<Rule>();
 
-    private void addRule(Rule rule) {
+    protected void addRule(Rule rule) {
         int count = rules.getOrDefault(rule, 0);
         count ++;
         rules.put(rule, count);

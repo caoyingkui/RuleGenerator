@@ -1,9 +1,13 @@
+import dataProcess.CodeProcessor;
 import javafx.util.Pair;
-import jdk.nashorn.internal.codegen.CompileUnit;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import rule.Rule;
+import rule.Generator;
+import rule.RuleGenerator;
+import rule.ToString;
 
 import java.io.*;
 import java.util.*;
@@ -18,52 +22,6 @@ public class Examinator {
             heads.add(rule.head);
         }
         return heads;
-    }
-
-    public String recover(List<Rule> rules) {
-        StringBuilder res = new StringBuilder();
-
-        Set<String> heads = getHeads(rules);
-
-        Stack<String> ops = new Stack<String>();
-
-        ops.push(rules.get(0).head);
-        Iterator<Rule> it = rules.iterator();
-
-        int indent = 0;
-        while (!ops.empty()) {
-            String top = ops.pop();
-            if (top.equals("$END$")) {
-                indent --;
-                continue;
-            }
-
-            if (!heads.contains(top)) {
-                res.append(top).append(" ");
-                continue;
-            }
-
-            if (!it.hasNext()) {
-                break;
-            }
-            Rule rule = it.next();
-
-            if (log) {
-                String indentString = "";
-                for (int i = 0; i < indent; i ++) indentString += "\t";
-                System.out.println(indentString + top + " " + rule.toString());
-            }
-
-            if (rule.head.equals(top)) {
-                indent ++;
-                ops.push("$END$");
-                for (int i = rule.children.size() - 1; i >= 0; i --) {
-                    ops.push(rule.children.get(i));
-                }
-            }
-        }
-
-        return res.toString();
     }
 
     public boolean examine(String target, String source) {
@@ -91,10 +49,11 @@ public class Examinator {
 
         System.out.println(new File("").getAbsolutePath());
 
-        files.add(new File("code.txt"));
+        //files.add(new File("code.txt"));
         //files.add(new File("/Users/caosheng/Desktop/jdk/jdk/test/jdk/java/lang/annotation/typeAnnotations/TestExecutableGetAnnotatedType.java"));
         read(new File("/Users/caosheng/Desktop/jdk"));
 
+        long ruleCount = 0, methodCount = 0;
         for (int i = 0; i < files.size(); i++){
             if (i % 100 == 0) System.out.println(i);
             File file = files.get(i);
@@ -125,24 +84,35 @@ public class Examinator {
 
                 Examinator examinator = new Examinator();
                 for (MethodDeclaration method : methods) {
-                    RuleGenerator ruleGenerator = new RuleGenerator();
-                    method.accept(ruleGenerator);
+                    methodCount ++;
+                    RuleGenerator generator = new RuleGenerator();
+                    method.accept(generator);
 
                     String target = new ToString().toString(method).replaceAll("\\s", "");
-                    String source = examinator.recover(ruleGenerator.addedRules).replaceAll("\\s", "");
+                    String source = CodeProcessor.recover(generator.addedRules, false).replaceAll("\\s", "");
+
+
+                    //CodeProcessor.prettifyPrint(CodeProcessor.getSequence(generator.addedRules));
+
+                    ruleCount += generator.addedRules.size();
+
+                    if (generator.addedRules.size() > 5000) {
+                        System.out.println(target);
+                    }
+
 
                     if (!examinator.examine(target, source)) {
                         System.out.println(file.getAbsolutePath());
                         examinator.log = true;
 
-                        examinator.recover(ruleGenerator.addedRules).replaceAll("\\s", "");
+                        CodeProcessor.recover(generator.addedRules, true).replaceAll("\\s", "");
                         System.out.println(method.toString().replaceAll("\n", ""));
                         System.out.println(target);
                         System.out.println(source);
                         System.out.println();
 
-                        RuleGenerator ruleGenerator1 = new RuleGenerator();
-                        method.accept(ruleGenerator1);
+                        RuleGenerator generator1 = new RuleGenerator();
+                        method.accept(generator1);
                         examinator.log = false;
                     } else {
                         //System.out.println("true");
@@ -156,19 +126,22 @@ public class Examinator {
             }
         }
 
-        System.out.println(RuleGenerator.rules.size());
+        System.out.println(Generator.rules.size());
         List<Pair<Integer, Rule>> rules = new ArrayList<>();
-        for (Rule rule: RuleGenerator.rules.keySet()) {
-            rules.add(new Pair<>(RuleGenerator.rules.get(rule), rule));
+        for (Rule rule: Generator.rules.keySet()) {
+            rules.add(new Pair<>(Generator.rules.get(rule), rule));
         }
 
         Collections.sort(rules, (a, b)-> b.getKey() - a.getKey());
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(new File("rule.txt")));
 
+
         for (int i = 0; i < rules.size(); i++) {
             writer.write(i + ": " + rules.get(i).getKey() + " " + rules.get(i).getValue().toString() + "\n");
         }
+
+        System.out.println(ruleCount / methodCount);
     }
 
 }

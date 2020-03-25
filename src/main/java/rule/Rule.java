@@ -1,5 +1,6 @@
+package rule;
+
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.internal.compiler.ast.CharLiteral;
 
 import java.util.ArrayList;
 
@@ -7,8 +8,12 @@ public class Rule {
     public static final String HEAD = "$";
     public static final String LEAF = "&";
 
+
+
     public static final String Annotation   = getClassName(Annotation.class);
     public static final String Annotations  = Annotation + "s";
+
+    public static final String Copy         = HEAD + "Copy";
 
     public static final String Declaration  = HEAD + "Declaration";
 
@@ -56,8 +61,6 @@ public class Rule {
     public static final String InfixOperator            = HEAD + "InfixOperator";
 
 
-
-
     public static final String SingleVariableDeclaration    = getClassName(SingleVariableDeclaration.class);
     public static final String SingleVariableDeclarations   = SingleVariableDeclaration + "s";
 
@@ -71,32 +74,34 @@ public class Rule {
     public String ruleString = "";
 
     public static String getSimpleName(SimpleName node) {
-        return node.getIdentifier();
+        return "SimpleName";
+        //return node.getIdentifier();
     }
 
     public static String getCharLiteral(CharacterLiteral node) {
-        return LEAF + "CharacterLiteral";
+        return "CharacterLiteral";
         //return node.getEscapedValue();
     }
 
     public static String getNumberLiteral(NumberLiteral node) {
-        return node.getToken();
+        return "NumberLiteral";
+        //return node.getToken();
     }
 
     public static String getStringLiteral(StringLiteral node) {
-        return LEAF + "StringLiteral";
+        return "StringLiteral";
         //return node.getEscapedValue();
     }
 
     public static String getJavadoc(Javadoc node) {
 
-        return LEAF + "Javadoc";
+        return "Javadoc";
         //return node.toString();
         //return "/**Javadoc*/";
     }
 
     public static String getTagName(TagElement node) {
-        return LEAF + "TagName";
+        return "TagName";
     }
 
     public static String getTextElementString(TextElement node) {
@@ -106,6 +111,11 @@ public class Rule {
     private static String getClassName(Class clazz) {
         String className = clazz.toString();
         return HEAD + className.substring(className.lastIndexOf(".") + 1);
+    }
+
+    public Rule() {
+        head = "";
+        children = new ArrayList<>();
     }
 
     public Rule(Class clazz) {
@@ -122,7 +132,7 @@ public class Rule {
 
     public Rule addChild(String child) {
         if (child.split(" ").length != 1) {
-           new Exception("add Rule function error: " + child ).printStackTrace();
+           new Exception("add rule.Rule function error: " + child ).printStackTrace();
         }
         children.add(child);
         return this;
@@ -175,13 +185,26 @@ public class Rule {
             count ++;
         }
         if (count < 2) {
-            //new Exception("add Rule function error!").printStackTrace();
+            //new Exception("add rule.Rule function error!").printStackTrace();
         }
         return this;
     }
 
     public Rule addChildren(String childreString, boolean condition) {
         if (condition) addChildren(childreString);
+        return this;
+    }
+
+    public Rule init(String str) {
+        String[] parts = str.split(" ");
+        if (parts.length < 2) {
+            new Exception("Rule string is not valid").printStackTrace();
+        } else {
+            head = parts[0];
+            for (int i = 1; i < parts.length; i++) {
+                children.add(parts[i]);
+            }
+        }
         return this;
     }
 
