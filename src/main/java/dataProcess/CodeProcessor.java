@@ -50,18 +50,26 @@ public class CodeProcessor {
 
 
     public List<Rule> generateRules() {
-        ASTParser parser = ASTParser.newParser(8);
+        ASTParser parser = ASTParser.newParser(9);
         parser.setKind(kind);
         parser.setSource(sourceCode);
 
-        TypeDeclaration node = (TypeDeclaration)(parser.createAST(null));
+        TypeDeclaration node = null;
+        try {
+            node = (TypeDeclaration) (parser.createAST(null));
+            MethodDeclaration method = (MethodDeclaration)(node.bodyDeclarations().get(0));
 
-        MethodDeclaration method = (MethodDeclaration)(node.bodyDeclarations().get(0));
+            RuleGenerator generator = new RuleGenerator();
+            method.accept(generator);
 
-        RuleGenerator generator = new RuleGenerator();
-        method.accept(generator);
+            rules = generator.addedRules;
+            return rules;
+        } catch (Exception e) {
+            System.out.println("error");
+            //e.printStackTrace();
+        }
 
-        rules = generator.addedRules;
+
 
         return rules;
     }

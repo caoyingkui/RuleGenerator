@@ -11,6 +11,10 @@ public class Generator extends ASTVisitor {
     public ArrayList<Rule> addedRules = new ArrayList<Rule>();
 
     protected void addRule(Rule rule) {
+        if (rule.children.size() == 1 && rule.head.equals(rule.children.get(0))) {
+            int a = 2;
+        }
+
         int count = rules.getOrDefault(rule, 0);
         count ++;
         rules.put(rule, count);
@@ -302,7 +306,7 @@ public class Generator extends ASTVisitor {
             addRule(new Rule(Rule.Dimensions).addChildren(
                     Rule.getExtendStr(Rule.Dimension, " ", dimensionSize)
             ));
-            visitUnitList(node.dimensions(), Rule.Dimension);
+            visitUnitList(node.dimensions());
         }
 
         return false;
@@ -1068,7 +1072,7 @@ public class Generator extends ASTVisitor {
             addRule(new Rule(Rule.VariableDeclarations).addChildren(
                     Rule.getExtendStr(Rule.VariableDeclaration, ",", variables.size())
             ));
-            visitUnitList(variables, Rule.VariableDeclaration);
+            visitUnitList(variables);
         }
 
         addRule(new Rule(ASTNode.class).addChild(node.getBody()));
@@ -1637,7 +1641,7 @@ public class Generator extends ASTVisitor {
             addRule(new Rule(Rule.Dimensions).addChildren(
                     Rule.getExtendStr(Rule.Dimension, " ", dimensions.size())
             ));
-            visitUnitList(dimensions, Rule.Dimension);
+            visitUnitList(dimensions);
         }
 
         if (initlizer != null) initlizer.accept(this);
@@ -1985,7 +1989,7 @@ public class Generator extends ASTVisitor {
             addRule(new Rule(Rule.TypeParameters).addChildren(
                     Rule.getExtendStr(Rule.TypeParameter, ",", typeParameters.size())
             ));
-            visitUnitList(typeParameters, Rule.TypeParameter);
+            visitUnitList(typeParameters);
         }
 
         if (superclassType != null) {
@@ -2118,7 +2122,7 @@ public class Generator extends ASTVisitor {
             addRule(new Rule(Rule.VariableDeclarationFragments).addChildren(
                     Rule.getExtendStr(Rule.VariableDeclarationFragment, ",", fragments.size())
             ));
-            visitUnitList(fragments, Rule.VariableDeclarationFragment);
+            visitUnitList(fragments);
         }
 
         return false;
@@ -2144,7 +2148,7 @@ public class Generator extends ASTVisitor {
                         Rule.getExtendStr(Rule.Dimension, " ", dimensionSize)
                 ));
 
-                visitUnitList(node.extraDimensions(), Rule.Dimension);
+                visitUnitList(node.extraDimensions());
             } else {
                 addRule(new Rule(Rule.Dimensions).addChildren(
                         Rule.getExtendStr("[]", " ", dimensionSize)

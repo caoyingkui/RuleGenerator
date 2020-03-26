@@ -5,36 +5,38 @@ import rule.Rule;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
 
 public class CodeRepresentation {
-    public static Map<String, Integer> tokenCodes   = new HashMap<>();
-    public static Map<Rule  , Integer> ruleCodes    = new HashMap<>();
+    public static Map<String, Integer> tokenCodes;
+    public static Map<Rule  , Integer> ruleCodes;
 
     static {
         tokenCodes = new HashMap<>();
         try {
-//            ResourceBundle bundle   = ResourceBundle.getBundle("properties");
-//            String tokenCodesDir    = bundle.getString("TokenCodes");
-//            BufferedReader reader   = new BufferedReader(new FileReader(new File(tokenCodesDir)));
-//
-//            String line = null;
-//            int index = 1; // 0 for UNK
-//            while ((line = reader.readLine()) != null) {
-//                line = line.trim();
-//                tokenCodes.put(line, index++);
-//            }
-//
-//            String ruleCodesDir     = bundle.getString("RuleCodes");
-//            reader                  = new BufferedReader(new FileReader(new File(tokenCodesDir)));
-//
-//            index = 1;  // 0 for extend
-//            while ((line = reader.readLine()) != null) {
-//                Rule rule = new Rule().init(line);
-//                ruleCodes.put(rule, index ++);
-//            }
+            tokenCodes = new HashMap<>();
+            ruleCodes  = new HashMap<>();
+            BufferedReader reader   = new BufferedReader(new FileReader(new File("TokenCodes")));
 
+            String line;
+            int index = 1; // 0 for UNK
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                tokenCodes.put(line, index++);
+            }
+
+            reader = new BufferedReader(new FileReader(new File("RuleCodes")));
+
+            index = 1;  // 0 for extend
+            while ((line = reader.readLine()) != null) {
+                Rule rule = new Rule().init(line);
+                ruleCodes.put(rule, index ++);
+            }
+
+        } catch (FileNotFoundException e) {
+            //e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -84,17 +86,28 @@ public class CodeRepresentation {
     }
 
     public List<Integer> getCodedRuleSequence (List<Rule> sequence) {
+        Rule temp = new Rule(Rule.Copy);
+
         List<Integer> res = new ArrayList<>();
         for (Rule rule: sequence) {
             int code = ruleCodes.getOrDefault(rule, 0);
-            if (code == 0) {
-                new Exception("Error: rule code is 0!").printStackTrace();
-                return null;
-            } else {
+            if (code != 0) {
                 res.add(code);
+            } else if (rule.head.equals(Rule.Copy)) {
+                res.add(ruleCodes.get(temp));
+            } else {
+                res.add(0);
             }
         }
         return res;
+    }
+
+    public static String toString(List<Integer> sequence) {
+        StringBuilder builder = new StringBuilder();
+        for (Integer i: sequence) {
+            builder.append(i).append(" ");
+        }
+        return builder.toString().trim();
     }
 
     public boolean isValid() {
@@ -102,8 +115,4 @@ public class CodeRepresentation {
                 && modifiedCodedSequences != null && modifiedCodedSequences.size() > 0
                 && targetSequence != null && targetSequence.size() > 0 ;
     }
-
-
-
-
 }

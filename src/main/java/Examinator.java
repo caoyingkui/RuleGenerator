@@ -96,10 +96,6 @@ public class Examinator {
 
                     ruleCount += generator.addedRules.size();
 
-                    if (generator.addedRules.size() > 5000) {
-                        System.out.println(target);
-                    }
-
 
                     if (!examinator.examine(target, source)) {
                         System.out.println(file.getAbsolutePath());
