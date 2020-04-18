@@ -6,13 +6,16 @@ import java.util.*;
 
 public class Generator extends ASTVisitor {
 
+    //rules 出现的次数
     public static Map<Rule, Integer> rules = new HashMap<>();
 
     public ArrayList<Rule> addedRules = new ArrayList<Rule>();
 
+
+
     protected void addRule(Rule rule) {
         if (rule.children.size() == 1 && rule.head.equals(rule.children.get(0))) {
-            int a = 2;
+            System.out.println("error from Generator");
         }
 
         int count = rules.getOrDefault(rule, 0);
@@ -50,11 +53,12 @@ public class Generator extends ASTVisitor {
     }
 
     private String getModifiers(List<ASTNode> modifiers) {
-        ToString temp = new ToString();
+        //ToString temp = new ToString();
         StringBuilder str = new StringBuilder();
         for (ASTNode node: modifiers) {
-            str.append(temp.toString(node)).append(" ");
+            str.append(node.toString()).append(" ");
         }
+
         return str.toString().trim();
 
 //        List<Annotation> annotations = new ArrayList<>();
@@ -139,7 +143,7 @@ public class Generator extends ASTVisitor {
 
         Rule rule = new Rule(node);
         rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild("@").addChild("interface").addChild(Rule.Name)
                 .addChild("{").addChild(Rule.Annotations, annotations != null).addChild("}");
         addRule(rule);
@@ -148,7 +152,7 @@ public class Generator extends ASTVisitor {
         if (node.getJavadoc() != null) node.getJavadoc().accept(this);
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
 
         addRule(new Rule(Rule.Name).addChild(node.getName()));
@@ -175,7 +179,7 @@ public class Generator extends ASTVisitor {
 
 
         rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(Rule.Type)
                 .addChild(Rule.Name).addChild("(").addChild(")")
                 .addChild("default", hasDefault).addChild(Rule.Expression).addChild(";");
@@ -188,7 +192,7 @@ public class Generator extends ASTVisitor {
         }
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         addRule(new Rule(Rule.Type).addChild(node.getType()));
         node.getType().accept(this);
@@ -712,7 +716,7 @@ public class Generator extends ASTVisitor {
 
         Rule rule = new Rule(node);
         rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(Rule.Name)
                 .addChildren(arguments != null, "(", Rule.Expressions, ")")
                 .addChild(AnonymousClassDeclaration.class, anonymousClassDeclaration != null);
@@ -725,7 +729,7 @@ public class Generator extends ASTVisitor {
         }
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         addRule(new Rule(Rule.Name).addChild(node.getName()));
         node.getName().accept(this);
@@ -761,7 +765,7 @@ public class Generator extends ASTVisitor {
         Rule rule = new Rule(node);
 
         rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChildren(implementStr.length() > 0, "implements", Rule.Types)
                 .addChild("{")
                 .addChild(Rule.EnumConstantDeclarations, enumConstantSize > 0)
@@ -775,7 +779,7 @@ public class Generator extends ASTVisitor {
         }
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         addRule(new Rule(Rule.Name).addChild(node.getName()));
         node.getName().accept(this);
@@ -858,7 +862,7 @@ public class Generator extends ASTVisitor {
 
         Rule rule = new Rule(node);
         rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(Rule.Type)
                 .addChild(Rule.VariableDeclarationFragments)
                 .addChild(";");
@@ -870,7 +874,7 @@ public class Generator extends ASTVisitor {
         }
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         addRule(new Rule(Rule.Type).addChild(node.getType()));
         node.getType().accept(this);
@@ -996,12 +1000,12 @@ public class Generator extends ASTVisitor {
                 getModifiers(node.getModifiers()) : getModifiers(node.modifiers());
 
         Rule rule = new Rule(node);
-        rule.addChild(Rule.Modifiers, modifiersStr.length() > 0)
+        rule.addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(node.getBody());
         addRule(rule);
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         node.getBody().accept(this);
         return false;
@@ -1072,7 +1076,7 @@ public class Generator extends ASTVisitor {
             addRule(new Rule(Rule.VariableDeclarations).addChildren(
                     Rule.getExtendStr(Rule.VariableDeclaration, ",", variables.size())
             ));
-            visitUnitList(variables);
+            visitUnitList(variables, Rule.VariableDeclaration);
         }
 
         addRule(new Rule(ASTNode.class).addChild(node.getBody()));
@@ -1089,6 +1093,7 @@ public class Generator extends ASTVisitor {
     }
 
     public boolean visit(MarkerAnnotation node) {
+        System.out.println("不想遍历MarkerAnnotation节点，又该条提示消息，说明有问题！");
         Rule rule = new Rule(node);
         rule.addChild("@").addChild(Rule.Name);
         addRule(rule);
@@ -1152,8 +1157,8 @@ public class Generator extends ASTVisitor {
 
 
         Rule rule = new Rule(node);
-        rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+        rule.addChild(Javadoc.class, node.getJavadoc() != null)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChildren(typeParameterSize > 0, "<", Rule.TypeParameters, ">")
                 .addChild(Rule.Type, returnType != null).addChild("void", !node.isConstructor() && returnType == null)
                 .addChild(SimpleName.class).addChild("(")
@@ -1166,10 +1171,14 @@ public class Generator extends ASTVisitor {
                 .addChild(";", node.getBody() == null);
         addRule(rule);
 
+        if (rule.children.get(0).equals("->")) {
+            int a = 2;
+        }
+
         if (node.getJavadoc() != null) node.getJavadoc().accept(this);
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         if (typeParameterSize > 0) {
             addRule(new Rule(Rule.TypeParameters).addChildren(
@@ -1612,7 +1621,7 @@ public class Generator extends ASTVisitor {
         Expression initlizer = node.getInitializer();
 
         Rule rule = new Rule(node);
-        rule.addChild(Rule.Modifiers, modifiersStr.length() > 0)
+        rule.addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(Rule.Type)
                 .addChild(Rule.Annotations, annotations != null)
                 .addChild("...", isVarargs)
@@ -1623,7 +1632,7 @@ public class Generator extends ASTVisitor {
 
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         addRule(new Rule(Rule.Type).addChild(node.getType()));
         node.getType().accept(this);
@@ -1966,7 +1975,7 @@ public class Generator extends ASTVisitor {
 
         Rule rule = new Rule(node);
         rule.addChild(node.getJavadoc())
-                .addChild(Rule.Modifiers, modifiersStr.length() > 0)
+                .addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild("class", !node.isInterface()).addChild("interface", node.isInterface())
                 .addChild(SimpleName.class)
                 .addChildren(typeParameters != null, "<", Rule.TypeParameters, ">")
@@ -1981,7 +1990,7 @@ public class Generator extends ASTVisitor {
         }
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         node.getName().accept(this);
 
@@ -2066,13 +2075,13 @@ public class Generator extends ASTVisitor {
         int typeSize = node.typeBounds().size();
 
         Rule rule = new Rule(node);
-        rule.addChild(Rule.Modifiers, modifiersStr.length() > 0)
+        rule.addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(SimpleName.class)
                 .addChildren(typeSize > 0, "extends", Rule.Types);
         addRule(rule);
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
 
         node.getName().accept(this);
@@ -2107,13 +2116,13 @@ public class Generator extends ASTVisitor {
                 null : node.fragments();
 
         Rule rule = new Rule(node);
-        rule.addChild(Rule.Modifiers, modifiersStr.length() > 0)
+        rule.addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(Rule.Type)
                 .addChild(Rule.VariableDeclarationFragments);
         addRule(rule);
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
         addRule(new Rule(Rule.Type).addChild(node.getType()));
         node.getType().accept(this);
@@ -2174,14 +2183,14 @@ public class Generator extends ASTVisitor {
                 null : node.fragments();
 
         Rule rule = new Rule(node);
-        rule.addChild(Rule.Modifiers, modifiersStr.length() > 0)
+        rule.addChild(Rule.Modifier, modifiersStr.length() > 0)
                 .addChild(Rule.Type)
                 .addChild(Rule.VariableDeclarationFragments, fragments != null)
                 .addChild(";");
         addRule(rule);
 
         if (modifiersStr.length() > 0)
-            addRule(new Rule(Rule.Modifiers).addChildren(modifiersStr));
+            addRule(new Rule(Rule.Modifier).addChildren(modifiersStr));
 
 
         addRule(new Rule(Rule.Type).addChild(node.getType()));

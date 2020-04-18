@@ -8,7 +8,7 @@ public class Rule {
     public static final String HEAD = "$";
     public static final String LEAF = "&";
 
-
+    public static final String Start        = HEAD + "Start";
 
     public static final String Annotation   = getClassName(Annotation.class);
     public static final String Annotations  = Annotation + "s";
@@ -45,7 +45,6 @@ public class Rule {
     public static final String TypeParameters   = TypeParameter + "s";
 
     public static final String Modifier             = getClassName(Modifier.class);
-    public static final String Modifiers            = Modifier + "s";
 
 
     public static final String ReceiverParameter    = HEAD + "ReceiverParameter";
@@ -108,9 +107,13 @@ public class Rule {
         return LEAF + "TextElement";
     }
 
-    private static String getClassName(Class clazz) {
+    public static String getClassName(Class clazz) {
         String className = clazz.toString();
         return HEAD + className.substring(className.lastIndexOf(".") + 1);
+    }
+
+    public static String getClassName(String clazz) {
+        return HEAD + clazz;
     }
 
     public Rule() {
@@ -197,11 +200,12 @@ public class Rule {
 
     public Rule init(String str) {
         String[] parts = str.split(" ");
-        if (parts.length < 2) {
+        if (parts.length < 3) {
             new Exception("Rule string is not valid").printStackTrace();
         } else {
             head = parts[0];
-            for (int i = 1; i < parts.length; i++) {
+            // 过滤箭头
+            for (int i = 2; i < parts.length; i++) {
                 children.add(parts[i]);
             }
         }

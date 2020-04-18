@@ -3,15 +3,14 @@ package rule;
 import dataProcess.DataInitializer;
 import org.eclipse.jdt.core.dom.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class RuleGenerator extends Generator{
-
-    public Map<String, Integer> addTokens   = new HashMap<>();
-
     private Map<String, Integer>    indexes = new HashMap<>();
-    private Map<String, String>     nameMap = new HashMap<>();
+    public Map<String, String>     original2convertMap = new HashMap<>();//原始到转换字符的映射
+    public Map<String, String>     convert2originalMap = new HashMap<>();//转换名称到原始的映射
 
     public  static Map<String, Integer>    nameLiterals = new HashMap<>();
     public  static Map<String, Integer>    numberLiterals = new HashMap<>();
@@ -20,22 +19,28 @@ public class RuleGenerator extends Generator{
     private int stringCount     = 0;
     private int numberCount     = 0;
     private int characterCount  = 0;
-    private int nameCount       = 0;
+    private int simpleNameCount = 0;
+    private int qualifiedNameCount = 0;
+    private int qualifiedTypeCount = 0;
 
     public static boolean isCoded    = true;
-
-    public static boolean needToCovert = true;
 
     // 获取Token
     // 然后才能获取rule list
     // 然后再
+
+    public void clear() {
+        addedRules= new ArrayList<>();
+        indexes = new HashMap<>();
+    }
+
 
     /**
      * 获取token有三种情况
      * @param node
      * @return
      */
-    public String getToken(ASTNode node) {
+    public String getToken(ASTNode node, String originalToken) {
         String converString =  "";
         if (node instanceof CharacterLiteral) {
             converString += "CharacterLiteral";
@@ -45,12 +50,15 @@ public class RuleGenerator extends Generator{
         } else if (node instanceof NumberLiteral) {
             if (DataInitializer.parseType == 1) {
                 converString = ((NumberLiteral) node).getToken();
-            } else if (!DataInitializer.Numbers.contains(numberLiterals)) {
-                converString += "NumberLiteral";
+            } else if (!DataInitializer.Numbers.contains(originalToken)) {
+                converString = "NumberLiteral";
                 if (isCoded) converString += numberCount;
 
                 numberCount ++;
+            } else {
+                converString = originalToken;
             }
+
             numberLiterals.put(converString, numberLiterals.getOrDefault(converString, 0) + 1);
         } else if (node instanceof StringLiteral) {
             converString += "StringLiteral";
@@ -58,24 +66,50 @@ public class RuleGenerator extends Generator{
 
             stringCount ++;
         } else if (node instanceof SimpleName) {
-            if (DataInitializer.parseType == 1) {
-                converString = ((SimpleName) node).getIdentifier();
-            } else if (!DataInitializer.Names.contains(converString)) {
-                converString += "SimpleName";
-                if (isCoded) converString += nameCount;
+            if (DataInitializer.parseType == 1 || DataInitializer.Names.contains(originalToken)) {
+                converString = originalToken;
+            } else {
+                converString = "SimpleName";
+                if (isCoded) converString += simpleNameCount;
 
-                nameCount ++;
+                simpleNameCount ++;
+            }
+
+            nameLiterals.put(converString, nameLiterals.getOrDefault(converString, 0) + 1);
+        } else if (node instanceof QualifiedName) {
+            if (DataInitializer.parseType == 1 || DataInitializer.Names.contains(originalToken)) {
+                converString = originalToken;
+            } else {
+                converString = "QualifiedName";
+                if (isCoded) converString += qualifiedNameCount;
+
+                qualifiedNameCount++;
+            }
+
+            nameLiterals.put(converString, nameLiterals.getOrDefault(converString, 0) + 1);
+        } else if (node instanceof QualifiedType) {
+            if (DataInitializer.parseType == 1 || DataInitializer.Names.contains(originalToken)) {
+                converString = originalToken;
+            } else {
+                converString = "QualifiedType";
+                if (isCoded) converString += qualifiedTypeCount;
+
+                qualifiedTypeCount++;
             }
 
             nameLiterals.put(converString, nameLiterals.getOrDefault(converString, 0) + 1);
         }
 
+        if (converString.equals("SimpleName170")) {
+            int a= 2;
+        }
         return converString;
     }
 
 
     void generateCopyRule(ASTNode node, String originalLiteral) {
-        String convertLiteral = getToken(node);
+        String convertLiteral = original2convertMap.containsKey(originalLiteral) ?
+                original2convertMap.get(originalLiteral) : getToken(node, originalLiteral);
         int index = indexes.getOrDefault(convertLiteral, -1);
         if (index != -1) {
             addRule(new Rule(node).addChild(Rule.Copy));
@@ -84,7 +118,8 @@ public class RuleGenerator extends Generator{
             addRule(new Rule(node).addChild(convertLiteral));
 
             indexes.put(convertLiteral, addedRules.size()-1);
-            nameMap.put(convertLiteral, originalLiteral);
+            convert2originalMap.put(convertLiteral, originalLiteral);
+            original2convertMap.put(originalLiteral, convertLiteral);
         }
     }
 
@@ -114,4 +149,17 @@ public class RuleGenerator extends Generator{
         generateCopyRule(node, originalLiteral);
         return false;
     }
+
+    public boolean visit(QualifiedType node) {
+        String originalLiteral = node.toString();
+        generateCopyRule(node, originalLiteral);
+        return false;
+    }
+
+    public boolean visit(QualifiedName node) {
+        String originalLiteral = node.toString();
+        generateCopyRule(node, originalLiteral);
+        return false;
+    }
+
 }

@@ -1,7 +1,7 @@
 package dataProcess;
 
 import org.eclipse.jdt.core.dom.*;
-import org.w3c.dom.css.CSSRuleList;
+import rule.CleanVisitor;
 import rule.Rule;
 import rule.RuleGenerator;
 
@@ -12,65 +12,95 @@ import java.util.*;
 
 public class CodeProcessor {
     public static Set<String> tokens = null;
-    public static final String LEFT = "$LEFT$";
-    public static final String RIGHT = "$RIGHT$";
-
-    static {
-        String filePath = "";
-        try {
-//            BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
-//            String line = "";
-//            while ((line = reader.readLine()) != null) {
-//                line = line.trim();
-//                if (line.isEmpty()) continue;
-//                tokens.add(line);
-//            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-
+    public static final String LEFT = "{{";
+    public static final String RIGHT = "}}";
 
 
     private char[] sourceCode = "".toCharArray();
     private int kind = ASTParser.K_COMPILATION_UNIT;
     public List<Rule> rules = null;
+    private ASTNode root;
 
 
-    CodeProcessor setKind(int kind) {
+    public ASTNode getRoot() {
+        if (root == null)
+            root = getNode(sourceCode, kind);
+        return root;
+    }
+
+    CodeProcessor setSource(char[] sourceCode, int kind) {
         this.kind = kind;
+        this.sourceCode =getCleanCode(sourceCode, kind);
         return this;
     }
 
-    CodeProcessor setSource(char[] sourceCode) {
-        this.sourceCode = sourceCode;
-        return this;
+    public static char[] getCleanCode(char[] code, int kind) {
+        CleanVisitor visitor = new CleanVisitor();
+        ASTNode node = getNode(code, kind);
+        node.accept(visitor);
+        return visitor.getResult().toCharArray();
     }
 
-
-    public List<Rule> generateRules() {
-        ASTParser parser = ASTParser.newParser(9);
-        parser.setKind(kind);
-        parser.setSource(sourceCode);
-
-        TypeDeclaration node = null;
+    public static ASTNode getNode(char[] code, int kind) {
         try {
-            node = (TypeDeclaration) (parser.createAST(null));
-            MethodDeclaration method = (MethodDeclaration)(node.bodyDeclarations().get(0));
+            ASTParser parser = ASTParser.newParser(9);
+            parser.setKind(kind);
+            parser.setSource(code);
 
-            RuleGenerator generator = new RuleGenerator();
-            method.accept(generator);
-
-            rules = generator.addedRules;
-            return rules;
+            TypeDeclaration node  = (TypeDeclaration) (parser.createAST(null));
+            MethodDeclaration method = (MethodDeclaration) (node.bodyDeclarations().get(0));
+            return method;
         } catch (Exception e) {
-            System.out.println("error");
-            //e.printStackTrace();
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String generateConnectMatrix(List<Rule> ruleList) {
+
+        StringBuilder builder = new StringBuilder();
+
+        Stack<String> ops = new Stack<>();
+        ops.push("<END>");
+        ops.push(ruleList.get(0).head);
+
+        Stack<Integer> parents = new Stack<>();
+        for (int index = 0; index < ruleList.size(); index++) {
+            String top = ops.pop();
+            while (top.equals("<END>")) {
+                top = ops.pop();
+                parents.pop();
+            }
+
+            Rule rule = ruleList.get(index);
+
+            if (!top.equals(rule.head))
+                new Exception("error from CodeProcessor").printStackTrace();
+
+            if (!parents.isEmpty()) // 第一个节点会出现没有父亲节点的情况
+                builder.append(parents.peek()).append(" ").append(index).append(" ");
+
+            parents.push(index);
+            ops.push("<END>");
+            for (int i = rule.children.size() - 1; i >= 0; i --) {
+                String child = rule.children.get(i);
+                if (child.startsWith(Rule.HEAD)) {
+                    ops.push(child);
+                }
+            }
         }
 
+        return builder.toString().trim();
+    }
+
+    public List<Rule> generateRules(RuleGenerator generator) {
+        generator.clear(); // 如果generator在重复使用，则需要把之前保留的添加的rule清除。
 
 
+        root = getNode(sourceCode, kind);
+        root.accept(generator);
+
+        rules = generator.addedRules;
         return rules;
     }
 
@@ -96,6 +126,7 @@ public class CodeProcessor {
         Iterator<Rule> it = ruleList.iterator();
 
         int indent = 0;
+        int count = 0;
         while (!ops.empty()) {
             String top = ops.pop();
             if (top.equals("$END$")) {
@@ -116,13 +147,14 @@ public class CodeProcessor {
             if (printTrace) {
                 String indentString = "";
                 for (int i = 0; i < indent; i ++) indentString += "\t";
+                System.out.print(String.format("%-5s", count));
                 System.out.println(indentString + top + " " + rule.toString());
+                count ++;
             }
-
 
             if (!rule.head.equals(top)) break;
 
-            //插的时候 是倒着插入的
+            //插入的时候 是倒着插入的
             indent ++;
             ops.push("$END$");
 
@@ -149,8 +181,6 @@ public class CodeProcessor {
     }
 
     public static List<String> getSequence(List<Rule> ruleList) {
-
-
         if (ruleList == null || ruleList.isEmpty()) {
             new Exception("Rule list is empty").printStackTrace();
             return null;
@@ -246,5 +276,24 @@ public class CodeProcessor {
 
     }
 
+    public static void main(String[] args) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(new File("code.txt")));
+            String line;
+            StringBuilder builder = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append("\n");
+            }
+
+            CodeProcessor processor = new CodeProcessor()
+                    .setSource(builder.toString().toCharArray(), ASTParser.K_CLASS_BODY_DECLARATIONS);
+
+            //processor.generateRules();
+
+            processor.prettifyPrint(processor.getSequence());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }
